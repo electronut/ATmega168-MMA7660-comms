@@ -1,5 +1,9 @@
 #include <avr/io.h>
+#include <string.h>
 #include <util/delay.h>
+
+#define SPEED 4800
+#define F_CPU 1000000
 
 // from https://www.mainframe.cx/~ckuethe/avr-c-tutorial/
 // Copyright (c) 2008 Chris Kuethe <chris.kuethe@gmail.com>
@@ -22,9 +26,15 @@ void serial_write(unsigned char c)
 	UDR0 = c;
 }
 
-#define SPEED 9600
-#define F_CPU 1000000
-
+// write null terminated string
+void serial_write_str(const char* str)
+{
+	int len = strlen(str);
+	int i;
+	for (i = 0; i < len; i++) {
+		serial_write(str[i]);
+	}		
+}
 
 int main (void)
 {
@@ -34,12 +44,20 @@ int main (void)
 	/* let the preprocessor calculate this */
 	serial_init( ( F_CPU / SPEED / 16 ) - 1);
 
+	// LED
+	// PD4 as output
+	DDRD |= (1<<4);
+	// initialize 
+
 	while (1) {
-		serial_write(str[i++]);
-		if (str[i] == '\0') {
-			i = 0;
-			_delay_ms(500);
-		}
+		serial_write_str(str);
+		
+		//Set high
+		PORTD |= (1<<4); 
+		_delay_ms(200);
+		//Set low
+		PORTD ^= (1<<4); 
+		_delay_ms(200);
 	}
 	return 0;
 }
