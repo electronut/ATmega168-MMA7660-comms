@@ -2,7 +2,7 @@ DEVICE     = atmega168
 CLOCK      = 8000000
 PROGRAMMER = -c usbtiny 
 OBJECTS    = main.o twi.o
-FUSES      = -U lfuse:w:0x62:m -U hfuse:w:0xdf:m -U efuse:w:0x01:m 
+FUSES      = -U lfuse:w:0xe2:m -U hfuse:w:0xdf:m -U efuse:w:0x01:m 
 
 # Tune the lines below only if you know what you are doing:
 

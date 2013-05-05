@@ -2,8 +2,8 @@
 #include <string.h>
 #include <util/delay.h>
 
-#define SPEED 4800
-#define F_CPU 1000000
+#define SPEED 9600
+#define F_CPU 8000000
 
 // from https://www.mainframe.cx/~ckuethe/avr-c-tutorial/
 // Copyright (c) 2008 Chris Kuethe <chris.kuethe@gmail.com>
