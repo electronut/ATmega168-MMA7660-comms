@@ -36,24 +36,14 @@ void serial_write_str(const char* str)
 	}		
 }
 
-int main (void)
+// MMA7660
+// set data to given register
+void mma7660_set_data(uint8_t reg, uint8_t data)
 {
-	char *str = "the quick brown fox jumps over the lazy dog. 1234567890\r\n";
-
-	/* let the preprocessor calculate this */
-	serial_init( ( F_CPU / SPEED / 16 ) - 1);
-
-	// LED
-	// PD4 as output
-	DDRD |= (1<<4);
-	// initialize 
-	
-	// i2c
-	serial_write_str("\n\n***\nstarting i2c...\n");
-	uint8_t status;
-
+	// generate START 
 	TWIStart();
-	status = TWIGetStatus();
+
+	uint8_t status = TWIGetStatus();
 	char msg[128];
 	sprintf(msg,"status = %x\n", status);
 	serial_write_str(msg);
@@ -62,20 +52,10 @@ int main (void)
 	else {
 		serial_write_str("start succeeded\n");
 	}
-	///	TWIWrite((()|(u8paddr>>3))&(~1));
-	//	if (TWIGetStatus() != 0x18)
-	//return ERROR;
 
-	// Load SLA_W into TWDR Register. 
-	// Clear TWINT bit in TWCR to start transmission of address
-	
 	// see fig. 11 in MMA7660 data sheet
-	TWDR = (0x4C << 1) | 0x0;
-	TWCR = (1<<TWINT) | (1<<TWEN);
+	TWIWrite((0x4C << 1) | 0x0);
 
-	// Wait for TWINT Flag set. This indicates that the SLA+W 
-	// has been transmitted, and ACK/NACK has been received.
-	while (!(TWCR & (1<<TWINT))) ;
 	// Check value of TWI status register. Mask prescaler bits. 
 	// If status different from MT_SLA_ACK go to ERROR
 	status = TWIGetStatus();
@@ -88,8 +68,103 @@ int main (void)
 		serial_write_str("address success!\n");
 	}
 
+	// send register
+	TWIWrite(reg);
+	status = TWIGetStatus();
+	sprintf(msg,"status = %x\n", status);
+	serial_write_str(msg);
+	// send data
+	TWIWrite(data);
+	status = TWIGetStatus();
+	sprintf(msg,"status = %x\n", status);
+	serial_write_str(msg);
+
 	TWIStop();
-	 
+}
+
+// MMA7660
+// set data to given register
+void mma7660_get_data(uint8_t reg, uint8_t* data)
+{
+		// generate START 
+	TWIStart();
+
+	uint8_t status = TWIGetStatus();
+	char msg[128];
+	sprintf(msg,"status = %x\n", status);
+	serial_write_str(msg);
+	if (status != 0x08)
+		serial_write_str("start failed!\n");
+	else {
+		serial_write_str("start succeeded\n");
+	}
+
+	// see fig. 11 in MMA7660 data sheet
+	TWIWrite((0x4C << 1) | 0x0);
+
+	// Check value of TWI status register. Mask prescaler bits. 
+	// If status different from MT_SLA_ACK go to ERROR
+	status = TWIGetStatus();
+	sprintf(msg,"status = %x\n", status);
+	serial_write_str(msg);
+	if (status != 0x18) {
+		serial_write_str("read address failed\n");
+	}
+	else {
+		serial_write_str("read address success!\n");
+	}
+
+	// send register
+	TWIWrite(reg);
+	status = TWIGetStatus();
+	sprintf(msg,"status = %x\n", status);
+	serial_write_str(msg);
+
+	// restart
+	TWIStart();
+	status = TWIGetStatus();
+	sprintf(msg,"status = %x\n", status);
+	serial_write_str(msg);
+
+	// see fig. 14 in MMA7660 data sheet
+	TWIWrite((0x4C << 1) | 0x1);
+	status = TWIGetStatus();
+	sprintf(msg,"status = %x\n", status);
+	serial_write_str(msg);
+
+	*data = TWIReadNACK();
+
+	TWIStop();
+}
+
+
+int main (void)
+{
+	char *str = "the quick brown fox jumps over the lazy dog. 1234567890\r\n";
+	char msg[128];
+
+	/* let the preprocessor calculate this */
+	serial_init( ( F_CPU / SPEED / 16 ) - 1);
+
+	// LED
+	// PD4 as output
+	DDRD |= (1<<4);
+	// initialize 
+	
+	// i2c
+	TWIInit();
+
+	serial_write_str("\n\n***\nstarting i2c...\n");
+	uint8_t status;
+
+	// set MODE to active
+	mma7660_set_data(0x07,0x01);
+
+	// read a byte
+	uint8_t val;
+	mma7660_get_data(0x00, &val);
+	sprintf(msg, "X: %x\n", val);
+	serial_write_str(msg);
 
 	while (1) {
 		serial_write_str(str);
