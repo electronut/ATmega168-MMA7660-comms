@@ -5,6 +5,18 @@
 #define SPEED 9600
 #define F_CPU 8000000
 
+// from: http://stackoverflow.com/questions/111928/is-there-a-printf-converter-to-print-in-binary-format
+#define BYTETOBINARYPATTERN "%d%d%d%d%d%d%d%d"
+#define BYTETOBINARY(byte)  \
+  (byte & 0x80 ? 1 : 0), \
+  (byte & 0x40 ? 1 : 0), \
+  (byte & 0x20 ? 1 : 0), \
+  (byte & 0x10 ? 1 : 0), \
+  (byte & 0x08 ? 1 : 0), \
+  (byte & 0x04 ? 1 : 0), \
+  (byte & 0x02 ? 1 : 0), \
+  (byte & 0x01 ? 1 : 0) 
+
 // 6-bit value to g value lookup table
 // From APPENDIX C - MMA7660FC ACQUISITION CODE TABLE
 float gLUT[] = {
@@ -155,8 +167,18 @@ int main (void)
 	serial_write_str("\n\n***\nstarting i2c...\n");
 	uint8_t status;
 
+	// set MODE to stand by
+	mma7660_set_data(0x07,0x00);
+
+	// set up interrupt register
+	mma7660_set_data(0x06,0b00000100);
+
+	// set up SR register
+	mma7660_set_data(0x08,0x00);
+
 	// set MODE to active
 	mma7660_set_data(0x07,0x01);
+
 
 	while (1) {
 		//serial_write_str(str);
@@ -166,12 +188,17 @@ int main (void)
 		mma7660_get_data(0x00, &x);
 		mma7660_get_data(0x01, &y);
 		mma7660_get_data(0x02, &z);
-		sprintf(msg, "%d %d %d\n", x, y, z);
+		//sprintf(msg, "%d %d %d\n", x, y, z);
+		//serial_write_str(msg);
+		sprintf(msg, "%f, %f, %f\n", gLUT[x], gLUT[y], gLUT[z]);
 		serial_write_str(msg);
-		//sprintf(msg, "%f %f %f\n", gLUT[x], gLUT[y], gLUT[z]);
-		double tmp = 1.23;
-		sprintf(msg, "%g\n", tmp);
-		serial_write_str(msg);
+		
+		// tilt register
+		uint8_t tReg;
+		mma7660_get_data(0x03, &tReg);
+		sprintf(msg, BYTETOBINARYPATTERN"\n", BYTETOBINARY(tReg));
+		//sprintf(msg, "%x\n", tReg);
+		//serial_write_str(msg);
 
 		_delay_ms(50);
 		
