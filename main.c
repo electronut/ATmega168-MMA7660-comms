@@ -95,14 +95,8 @@ void mma7660_get_data(uint8_t reg, uint8_t* data)
 	TWIStart();
 
 	uint8_t status = TWIGetStatus();
-	char msg[128];
-	sprintf(msg,"status = %x\n", status);
-	serial_write_str(msg);
 	if (status != 0x08)
 		serial_write_str("start failed!\n");
-	else {
-		serial_write_str("start succeeded\n");
-	}
 
 	// see fig. 11 in MMA7660 data sheet
 	TWIWrite((0x4C << 1) | 0x0);
@@ -110,33 +104,32 @@ void mma7660_get_data(uint8_t reg, uint8_t* data)
 	// Check value of TWI status register. Mask prescaler bits. 
 	// If status different from MT_SLA_ACK go to ERROR
 	status = TWIGetStatus();
-	sprintf(msg,"status = %x\n", status);
-	serial_write_str(msg);
 	if (status != 0x18) {
 		serial_write_str("read address failed\n");
-	}
-	else {
-		serial_write_str("read address success!\n");
 	}
 
 	// send register
 	TWIWrite(reg);
 	status = TWIGetStatus();
-	sprintf(msg,"status = %x\n", status);
-	serial_write_str(msg);
+	if (status != 0x28) {
+		serial_write_str("send reg failed!");
+	}
 
 	// restart
 	TWIStart();
 	status = TWIGetStatus();
-	sprintf(msg,"status = %x\n", status);
-	serial_write_str(msg);
+	if (status != 0x10) {
+		serial_write_str("repeated start failed!");
+	}
 
 	// see fig. 14 in MMA7660 data sheet
 	TWIWrite((0x4C << 1) | 0x1);
 	status = TWIGetStatus();
-	sprintf(msg,"status = %x\n", status);
-	serial_write_str(msg);
+	if (status != 0x40) {
+		serial_write_str("SLA + R failed!");
+	}
 
+	// set data
 	*data = TWIReadNACK();
 
 	TWIStop();
@@ -165,21 +158,32 @@ int main (void)
 	// set MODE to active
 	mma7660_set_data(0x07,0x01);
 
-	// read a byte
-	uint8_t val;
-	mma7660_get_data(0x00, &val);
-	sprintf(msg, "X: %x\n", val);
-	serial_write_str(msg);
-
 	while (1) {
-		serial_write_str(str);
+		//serial_write_str(str);
+
+		// read a byte
+		uint8_t x, y, z;
+		mma7660_get_data(0x00, &x);
+		mma7660_get_data(0x01, &y);
+		mma7660_get_data(0x02, &z);
+		sprintf(msg, "%d %d %d\n", x, y, z);
+		serial_write_str(msg);
+		//sprintf(msg, "%f %f %f\n", gLUT[x], gLUT[y], gLUT[z]);
+		double tmp = 1.23;
+		sprintf(msg, "%g\n", tmp);
+		serial_write_str(msg);
+
+		_delay_ms(50);
 		
+#if 0
 		//Set high
 		PORTD |= (1<<4); 
 		_delay_ms(200);
 		//Set low
 		PORTD ^= (1<<4); 
 		_delay_ms(200);
+#endif
+
 	}
 	return 0;
 }
