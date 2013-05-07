@@ -151,7 +151,6 @@ void mma7660_get_data(uint8_t reg, uint8_t* data)
 
 int main (void)
 {
-	char *str = "the quick brown fox jumps over the lazy dog. 1234567890\r\n";
 	char msg[128];
 
 	/* let the preprocessor calculate this */
@@ -162,9 +161,19 @@ int main (void)
 	DDRD |= (1<<4);
 	// initialize 
 
+	// turn off interrupts
+	cli();
+
 	// ATmega168 interrupt - INT0 is pin 4
 	EICRA |= (1 << ISC01);    // set INT0 to trigger on falling edge
 	EIMSK |= (1 << INT0);     // Turns on INT0
+
+	// timer 16
+	TCCR1B |= (1<<CS12) | (1<<CS10);  //Divide by 1024
+	OCR1A = 23437;        // Count cycles 
+	TCCR1B |= 1<<WGM12;     //Put Timer/Counter1 in CTC mode
+	TIMSK1 |= 1<<OCIE1A;
+
 	sei();                    // turn on interrupts
 
 
@@ -172,7 +181,6 @@ int main (void)
 	TWIInit();
 
 	serial_write_str("\n\n***\nstarting i2c...\n");
-	uint8_t status;
 
 	// set MODE to stand by
 	mma7660_set_data(0x07,0x00);
@@ -239,4 +247,10 @@ ISR (INT0_vect)
 	_delay_ms(50);
 	//Set low
 	PORTD ^= (1<<4); 
+}
+
+// 16-bit timer CTC handler
+ISR(TIMER1_COMPA_vect)      //Interrupt Service Routine
+{
+	serial_write_str("3 seconds up!\n");
 }
