@@ -174,13 +174,13 @@ int main (void)
 	mma7660_set_data(0x08,0x00);
 
 	// set up interrupt register
-	mma7660_set_data(0x06,0b00100000);
+	mma7660_set_data(0x06,0b00000100);
 
 	// tap detection reg
-	//mma7660_set_data(0x09,0b00000010);
+	mma7660_set_data(0x09,11);
 		
 	// tap debounce reg
-	//mma7660_set_data(0x0a,0x02);
+	mma7660_set_data(0x0a,11);
 	
 	// set MODE to active
 	mma7660_set_data(0x07,0x01);
