@@ -1,6 +1,7 @@
 #include <avr/io.h>
 #include <string.h>
 #include <util/delay.h>
+#include <avr/interrupt.h>
 
 #define SPEED 9600
 #define F_CPU 8000000
@@ -160,7 +161,13 @@ int main (void)
 	// PD4 as output
 	DDRD |= (1<<4);
 	// initialize 
-	
+
+	// ATmega168 interrupt - INT0 is pin 4
+	EICRA |= (1 << ISC01);    // set INT0 to trigger on falling edge
+	EIMSK |= (1 << INT0);     // Turns on INT0
+	sei();                    // turn on interrupts
+
+
 	// i2c
 	TWIInit();
 
@@ -221,3 +228,15 @@ int main (void)
 	return 0;
 }
 
+// interrupt handler
+ISR (INT0_vect)
+{
+	serial_write_str("interrupt!\n");
+	// flash LED:
+
+	//Set high
+	PORTD |= (1<<4); 
+	_delay_ms(50);
+	//Set low
+	PORTD ^= (1<<4); 
+}
