@@ -170,12 +170,18 @@ int main (void)
 	// set MODE to stand by
 	mma7660_set_data(0x07,0x00);
 
-	// set up interrupt register
-	mma7660_set_data(0x06,0b00000100);
-
 	// set up SR register
 	mma7660_set_data(0x08,0x00);
 
+	// set up interrupt register
+	mma7660_set_data(0x06,0b00100000);
+
+	// tap detection reg
+	//mma7660_set_data(0x09,0b00000010);
+		
+	// tap debounce reg
+	//mma7660_set_data(0x0a,0x02);
+	
 	// set MODE to active
 	mma7660_set_data(0x07,0x01);
 
@@ -191,16 +197,16 @@ int main (void)
 		//sprintf(msg, "%d %d %d\n", x, y, z);
 		//serial_write_str(msg);
 		sprintf(msg, "%f, %f, %f\n", gLUT[x], gLUT[y], gLUT[z]);
-		serial_write_str(msg);
+		//serial_write_str(msg);
 		
 		// tilt register
 		uint8_t tReg;
 		mma7660_get_data(0x03, &tReg);
 		sprintf(msg, BYTETOBINARYPATTERN"\n", BYTETOBINARY(tReg));
 		//sprintf(msg, "%x\n", tReg);
-		//serial_write_str(msg);
+		serial_write_str(msg);
 
-		_delay_ms(50);
+		_delay_ms(100);
 		
 #if 0
 		//Set high
