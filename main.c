@@ -2,6 +2,7 @@
 #include <string.h>
 #include <util/delay.h>
 #include <avr/interrupt.h>
+#include <avr/sleep.h> 
 
 #define SPEED 9600
 #define F_CPU 8000000
@@ -148,6 +149,8 @@ void mma7660_get_data(uint8_t reg, uint8_t* data)
 	TWIStop();
 }
 
+// for sleep
+volatile int sleeping = 0;
 
 int main (void)
 {
@@ -164,19 +167,24 @@ int main (void)
 	// turn off interrupts
 	cli();
 
+#if 0
 	// ATmega168 interrupt - INT0 is pin 4
-	EICRA |= (1 << ISC01);    // set INT0 to trigger on falling edge
+	EICRA |= (1 << ISC00);    // set INT0 to trigger on falling edge
 	EIMSK |= (1 << INT0);     // Turns on INT0
+#endif
+	
+	// Pin change interrupt enable 0
+	PCICR |= (1 << PCIE0);
+	PCMSK0 |= (1 << PCINT0);
 
-	// timer 16
+	// 16 bit timer - every 3 seconds
 	TCCR1B |= (1<<CS12) | (1<<CS10);  //Divide by 1024
-	OCR1A = 23437;        // Count cycles 
+	OCR1A = 23437;        // Count cycles - 3*8000000/1024 
 	TCCR1B |= 1<<WGM12;     //Put Timer/Counter1 in CTC mode
 	TIMSK1 |= 1<<OCIE1A;
 
 	sei();                    // turn on interrupts
-
-
+	
 	// i2c
 	TWIInit();
 
@@ -222,24 +230,36 @@ int main (void)
 		serial_write_str(msg);
 
 		_delay_ms(100);
-		
 #if 0
-		//Set high
-		PORTD |= (1<<4); 
-		_delay_ms(200);
-		//Set low
-		PORTD ^= (1<<4); 
-		_delay_ms(200);
+		serial_write_str("going to sleep...\n");
+		
+		set_sleep_mode(SLEEP_MODE_PWR_SAVE);
+		cli();
+		
+		sleep_enable();
+		sei();
+		sleep_cpu();
+		sleep_disable();
+		sei();
 #endif
 
 	}
+
 	return 0;
+}
+
+// pin change interrupt
+ISR (PCINT0_vect)
+{
+	serial_write_str("pin chnage interrupt!\n");
 }
 
 // interrupt handler
 ISR (INT0_vect)
 {
-	serial_write_str("interrupt!\n");
+	serial_write_str("interrupt!\nWaking up...\n");
+	sleep_disable();
+
 	// flash LED:
 
 	//Set high
