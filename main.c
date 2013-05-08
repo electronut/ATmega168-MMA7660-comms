@@ -230,7 +230,7 @@ int main (void)
 		serial_write_str(msg);
 
 		_delay_ms(100);
-#if 0
+#if 1
 		serial_write_str("going to sleep...\n");
 		
 		set_sleep_mode(SLEEP_MODE_PWR_SAVE);
@@ -252,6 +252,16 @@ int main (void)
 ISR (PCINT0_vect)
 {
 	serial_write_str("pin chnage interrupt!\n");
+
+	sleep_disable();
+
+	// flash LED:
+
+	//Set high
+	PORTD |= (1<<4); 
+	_delay_ms(50);
+	//Set low
+	PORTD ^= (1<<4); 
 }
 
 // interrupt handler
