@@ -177,11 +177,13 @@ int main (void)
 	PCICR |= (1 << PCIE0);
 	PCMSK0 |= (1 << PCINT0);
 
+#if 0
 	// 16 bit timer - every 3 seconds
 	TCCR1B |= (1<<CS12) | (1<<CS10);  //Divide by 1024
 	OCR1A = 23437;        // Count cycles - 3*8000000/1024 
 	TCCR1B |= 1<<WGM12;     //Put Timer/Counter1 in CTC mode
 	TIMSK1 |= 1<<OCIE1A;
+#endif
 
 	sei();                    // turn on interrupts
 	
@@ -205,9 +207,9 @@ int main (void)
 	// tap debounce reg
 	mma7660_set_data(0x0a,11);
 
-	// sleep/awake mode
-	
-	
+	// count
+	//mma7660_set_data(0x05, 0xff);
+ 
 	// set MODE to active
 	mma7660_set_data(0x07,0b00011001);
 
@@ -228,9 +230,21 @@ int main (void)
 		// tilt register
 		uint8_t tReg;
 		mma7660_get_data(0x03, &tReg);
-		sprintf(msg, BYTETOBINARYPATTERN"\n", BYTETOBINARY(tReg));
+		sprintf(msg, "TILT :"BYTETOBINARYPATTERN"\n", BYTETOBINARY(tReg));
 		//sprintf(msg, "%x\n", tReg);
+		//serial_write_str(msg);
+
+		// SRST
+		uint8_t srstReg;
+		mma7660_get_data(0x04, &srstReg);
+		sprintf(msg, "SRST :"BYTETOBINARYPATTERN"\n", BYTETOBINARY(srstReg));
 		serial_write_str(msg);
+
+		// SPCNT
+		uint8_t spcntReg;
+		mma7660_get_data(0x05, &spcntReg);
+		sprintf(msg, "SPCNT:"BYTETOBINARYPATTERN"\n", BYTETOBINARY(spcntReg));
+		//serial_write_str(msg);
 
 		_delay_ms(100);
 #if 0
