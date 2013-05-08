@@ -235,7 +235,10 @@ int main (void)
 		
 		set_sleep_mode(SLEEP_MODE_PWR_SAVE);
 		cli();
-		
+
+		PCICR |= (1 << PCIE0);
+		PCMSK0 |= (1 << PCINT0);
+
 		sleep_enable();
 		sei();
 		sleep_cpu();
@@ -251,7 +254,7 @@ int main (void)
 // pin change interrupt
 ISR (PCINT0_vect)
 {
-	serial_write_str("pin chnage interrupt!\n");
+	serial_write_str("\npin change interrupt!\n");
 
 	sleep_disable();
 
