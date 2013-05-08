@@ -199,7 +199,7 @@ int main (void)
 	mma7660_set_data(0x08,0x00);
 
 	// set up interrupt register
-	mma7660_set_data(0x06,0b00001000);
+	mma7660_set_data(0x06,0b11100100);
 
 	// tap detection reg
 	mma7660_set_data(0x09,11);
@@ -208,7 +208,7 @@ int main (void)
 	mma7660_set_data(0x0a,11);
 
 	// count
-	//mma7660_set_data(0x05, 0xff);
+	mma7660_set_data(0x05, 0xff);
  
 	// set MODE to active
 	mma7660_set_data(0x07,0b00011001);
@@ -273,7 +273,7 @@ ISR (PCINT0_vect)
 {
 	serial_write_str("\npin change interrupt!\n");
 
-	sleep_disable();
+	//sleep_disable();
 
 	// flash LED:
 
