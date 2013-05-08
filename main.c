@@ -197,16 +197,19 @@ int main (void)
 	mma7660_set_data(0x08,0x00);
 
 	// set up interrupt register
-	mma7660_set_data(0x06,0b00000100);
+	mma7660_set_data(0x06,0b00001000);
 
 	// tap detection reg
 	mma7660_set_data(0x09,11);
 		
 	// tap debounce reg
 	mma7660_set_data(0x0a,11);
+
+	// sleep/awake mode
+	
 	
 	// set MODE to active
-	mma7660_set_data(0x07,0x01);
+	mma7660_set_data(0x07,0b00011001);
 
 
 	while (1) {
@@ -230,7 +233,7 @@ int main (void)
 		serial_write_str(msg);
 
 		_delay_ms(100);
-#if 1
+#if 0
 		serial_write_str("going to sleep...\n");
 		
 		set_sleep_mode(SLEEP_MODE_PWR_SAVE);
