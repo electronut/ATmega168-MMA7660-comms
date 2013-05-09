@@ -150,7 +150,7 @@ void mma7660_get_data(uint8_t reg, uint8_t* data)
 }
 
 // for sleep
-volatile int sleeping = 0;
+volatile int goToSleep = 0;
 
 int main (void)
 {
@@ -167,23 +167,15 @@ int main (void)
 	// turn off interrupts
 	cli();
 
-#if 0
-	// ATmega168 interrupt - INT0 is pin 4
-	EICRA |= (1 << ISC00);    // set INT0 to trigger on falling edge
-	EIMSK |= (1 << INT0);     // Turns on INT0
-#endif
-	
 	// Pin change interrupt enable 0
 	PCICR |= (1 << PCIE0);
 	PCMSK0 |= (1 << PCINT0);
 
-#if 0
 	// 16 bit timer - every 3 seconds
 	TCCR1B |= (1<<CS12) | (1<<CS10);  //Divide by 1024
 	OCR1A = 23437;        // Count cycles - 3*8000000/1024 
 	TCCR1B |= 1<<WGM12;     //Put Timer/Counter1 in CTC mode
 	TIMSK1 |= 1<<OCIE1A;
-#endif
 
 	sei();                    // turn on interrupts
 	
@@ -247,21 +239,26 @@ int main (void)
 		//serial_write_str(msg);
 
 		_delay_ms(100);
-#if 0
-		serial_write_str("going to sleep...\n");
+
+		if(goToSleep) {
+			serial_write_str("going to sleep...\n");
 		
-		set_sleep_mode(SLEEP_MODE_PWR_SAVE);
-		cli();
+			set_sleep_mode(SLEEP_MODE_PWR_SAVE);
+			cli();
 
-		PCICR |= (1 << PCIE0);
-		PCMSK0 |= (1 << PCINT0);
+			// need to set pin change register again
+			PCICR |= (1 << PCIE0);
+			PCMSK0 |= (1 << PCINT0);
 
-		sleep_enable();
-		sei();
-		sleep_cpu();
-		sleep_disable();
-		sei();
-#endif
+			sleep_enable();
+			sei();
+			// sleep
+			sleep_cpu();
+			// just awake
+			goToSleep = 0;
+			sleep_disable();
+			sei();
+		}
 
 	}
 
@@ -271,24 +268,8 @@ int main (void)
 // pin change interrupt
 ISR (PCINT0_vect)
 {
-	serial_write_str("\npin change interrupt!\n");
-
-	//sleep_disable();
-
-	// flash LED:
-
-	//Set high
-	PORTD |= (1<<4); 
-	_delay_ms(50);
-	//Set low
-	PORTD ^= (1<<4); 
-}
-
-// interrupt handler
-ISR (INT0_vect)
-{
-	serial_write_str("interrupt!\nWaking up...\n");
 	sleep_disable();
+	serial_write_str("\npin change interrupt!\n");
 
 	// flash LED:
 
@@ -303,4 +284,5 @@ ISR (INT0_vect)
 ISR(TIMER1_COMPA_vect)      //Interrupt Service Routine
 {
 	serial_write_str("3 seconds up!\n");
+	goToSleep = 1;
 }
