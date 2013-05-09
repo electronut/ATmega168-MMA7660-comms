@@ -250,15 +250,10 @@ int main (void)
 	// turn off interrupts
 	cli();
 
-	// Pin change interrupt enable 0
-	PCICR |= (1 << PCIE0);
-	PCMSK0 |= (1 << PCINT0);
-
 	// 16 bit timer - every 3 seconds
 	TCCR1B |= (1<<CS12) | (1<<CS10);  //Divide by 1024
 	OCR1A = 23437;        // Count cycles - 3*8000000/1024 
 	TCCR1B |= 1<<WGM12;     //Put Timer/Counter1 in CTC mode
-	TIMSK1 |= 1<<OCIE1A;
 
 	sei();                    // turn on interrupts
 	
@@ -323,23 +318,47 @@ int main (void)
 
 		_delay_ms(100);
 
+    // is MMA7660 asleep?
+    if(srstReg & 0b00000010) {
+
+      // start ATmega168 sleep timer if not already started
+      TIMSK1 |= 1<<OCIE1A;
+    }
+    else {
+
+      // cancel ATmega168 sleep timer if already started
+      TIMSK1 &= ~(1<<OCIE1A);
+    }
+
 		if(goToSleep) {
 			serial_write_str("going to sleep...\n");
 		
 			set_sleep_mode(SLEEP_MODE_PWR_SAVE);
 			cli();
 
-			// need to set pin change register again
-			PCICR |= (1 << PCIE0);
-			PCMSK0 |= (1 << PCINT0);
+      // enable Pin change interrupt enable 0
+      PCICR |= (1 << PCIE0);
+      PCMSK0 |= (1 << PCINT0);
 
+      // cancel ATmega168 sleep timer if already started
+      TIMSK1 &= ~(1<<OCIE1A);
+
+      // enable sleep flag
 			sleep_enable();
 			sei();
 			// sleep
 			sleep_cpu();
+      // ...
 			// just awake
+      // ...
+      // unset sleep flag
 			goToSleep = 0;
+      // disable sleep flag
 			sleep_disable();
+      
+      // disable Pin change interrupt enable 0
+      PCICR &= ~(1 << PCIE0);
+
 			sei();
 		}
 
@@ -354,6 +373,7 @@ ISR (PCINT0_vect)
 	sleep_disable();
 	serial_write_str("\npin change interrupt!\n");
 
+#if 0
 	// flash LED:
 
 	//Set high
@@ -361,6 +381,8 @@ ISR (PCINT0_vect)
 	_delay_ms(50);
 	//Set low
 	PORTD ^= (1<<4); 
+#endif
+
 }
 
 // 16-bit timer CTC handler
