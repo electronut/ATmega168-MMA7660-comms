@@ -24,26 +24,36 @@
 float gLUT[] = {
 0.000,0.047,0.094,0.141,0.188,0.234,0.281,0.328,0.375,0.422,0.469,0.516,0.563,0.609,0.656,0.703,0.750,0.797,0.844,0.891,0.938,0.984,1.031,1.078,1.125,1.172,1.219,1.266,1.313,1.359,1.406,1.453,-1.500,-1.453,-1.406,-1.359,-1.313,-1.266,-1.219,-1.172,-1.125,-1.078,-1.031,-0.984,-0.938,-0.891,-0.844,-0.797,-0.750,-0.703,-0.656,-0.609,-0.563,-0.516,-0.469,-0.422,-0.375,-0.328,-0.281,-0.234,-0.188,-0.141,-0.094,-0.047};
 
-// from https://www.mainframe.cx/~ckuethe/avr-c-tutorial/
-// Copyright (c) 2008 Chris Kuethe <chris.kuethe@gmail.com>
-void serial_init(unsigned int bittimer)
+
+//
+// BEGIN: serial comms
+//
+// from data sheet
+#define BAUD 9600
+#define MYUBRR F_CPU/16/BAUD-1
+
+void USART_Init(unsigned int ubrr) 
 {
-	/* Set the baud rate */
-	UBRR0H = (unsigned char) (bittimer >> 8);
-	UBRR0L = (unsigned char) bittimer;
-	/* set the framing to 8N1 */
-	UCSR0C = (3 << UCSZ00);
-	/* Engage! */
-	UCSR0B = (1 << RXEN0) | (1 << TXEN0);
-	return;
+  /*Set baud rate */
+  UBRR0H = (unsigned char)(ubrr>>8); 
+  UBRR0L = (unsigned char)ubrr;
+  /*Enable receiver and transmitter */ 
+  UCSR0B = (1<<RXEN0)|(1<<TXEN0);
+  /* Set frame format: 8data, 1 stop bit */ 
+  UCSR0C = (1<<UCSZ00) | (1 << UCSZ01);
 }
 
-void serial_write(unsigned char c)
+void USART_Transmit(unsigned char data ) 
 {
-	while ( !(UCSR0A & (1 << UDRE0)) )
-		;
-	UDR0 = c;
+  /* Wait for empty transmit buffer */ 
+  while ( !( UCSR0A & (1<<UDRE0)) )
+    ;
+  /* Put data into buffer, sends the data */ 
+  UDR0 = data;
 }
+//
+// END: serial comms
+//
 
 // write null terminated string
 void serial_write_str(const char* str)
@@ -51,7 +61,7 @@ void serial_write_str(const char* str)
 	int len = strlen(str);
 	int i;
 	for (i = 0; i < len; i++) {
-		serial_write(str[i]);
+		USART_Transmit(str[i]);
 	}		
 }
 
@@ -157,7 +167,9 @@ int main (void)
 	char msg[128];
 
 	/* let the preprocessor calculate this */
-	serial_init( ( F_CPU / SPEED / 16 ) - 1);
+	//serial_init( ( F_CPU / SPEED / 16 ) - 1);
+
+  USART_Init(MYUBRR);
 
 	// LED
 	// PD4 as output
