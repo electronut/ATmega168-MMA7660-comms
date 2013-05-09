@@ -9,20 +9,20 @@
 
 // from: http://stackoverflow.com/questions/111928/is-there-a-printf-converter-to-print-in-binary-format
 #define BYTETOBINARYPATTERN "%d%d%d%d%d%d%d%d"
-#define BYTETOBINARY(byte)  \
-  (byte & 0x80 ? 1 : 0), \
-  (byte & 0x40 ? 1 : 0), \
-  (byte & 0x20 ? 1 : 0), \
-  (byte & 0x10 ? 1 : 0), \
-  (byte & 0x08 ? 1 : 0), \
-  (byte & 0x04 ? 1 : 0), \
-  (byte & 0x02 ? 1 : 0), \
-  (byte & 0x01 ? 1 : 0) 
+#define BYTETOBINARY(byte)                      \
+  (byte & 0x80 ? 1 : 0),                        \
+    (byte & 0x40 ? 1 : 0),                      \
+    (byte & 0x20 ? 1 : 0),                      \
+    (byte & 0x10 ? 1 : 0),                      \
+    (byte & 0x08 ? 1 : 0),                      \
+    (byte & 0x04 ? 1 : 0),                      \
+    (byte & 0x02 ? 1 : 0),                      \
+    (byte & 0x01 ? 1 : 0) 
 
 // 6-bit value to g value lookup table
 // From APPENDIX C - MMA7660FC ACQUISITION CODE TABLE
 float gLUT[] = {
-0.000,0.047,0.094,0.141,0.188,0.234,0.281,0.328,0.375,0.422,0.469,0.516,0.563,0.609,0.656,0.703,0.750,0.797,0.844,0.891,0.938,0.984,1.031,1.078,1.125,1.172,1.219,1.266,1.313,1.359,1.406,1.453,-1.500,-1.453,-1.406,-1.359,-1.313,-1.266,-1.219,-1.172,-1.125,-1.078,-1.031,-0.984,-0.938,-0.891,-0.844,-0.797,-0.750,-0.703,-0.656,-0.609,-0.563,-0.516,-0.469,-0.422,-0.375,-0.328,-0.281,-0.234,-0.188,-0.141,-0.094,-0.047};
+  0.000,0.047,0.094,0.141,0.188,0.234,0.281,0.328,0.375,0.422,0.469,0.516,0.563,0.609,0.656,0.703,0.750,0.797,0.844,0.891,0.938,0.984,1.031,1.078,1.125,1.172,1.219,1.266,1.313,1.359,1.406,1.453,-1.500,-1.453,-1.406,-1.359,-1.313,-1.266,-1.219,-1.172,-1.125,-1.078,-1.031,-0.984,-0.938,-0.891,-0.844,-0.797,-0.750,-0.703,-0.656,-0.609,-0.563,-0.516,-0.469,-0.422,-0.375,-0.328,-0.281,-0.234,-0.188,-0.141,-0.094,-0.047};
 
 
 //
@@ -55,11 +55,11 @@ void USART_Transmit(unsigned char data )
 // write null terminated string
 void serial_write_str(const char* str)
 {
-	int len = strlen(str);
-	int i;
-	for (i = 0; i < len; i++) {
-		USART_Transmit(str[i]);
-	}		
+  int len = strlen(str);
+  int i;
+  for (i = 0; i < len; i++) {
+    USART_Transmit(str[i]);
+  }   
 }
 
 //
@@ -78,10 +78,10 @@ void TWI_init()
   // set TWI bit rate register:
   // SCL_freq = CPU_freq/(16 + 2*(TWBR)*(PrescalarValue)
   // In this case = 8000000/(16+2*12*1) = 200 kHz
-	TWBR = 0x0C;
+  TWBR = 0x0C;
 
-	//enable TWI
-	TWCR = (1<<TWEN);
+  //enable TWI
+  TWCR = (1<<TWEN);
 }
 
 void TWI_start()
@@ -114,17 +114,17 @@ void TWI_write(uint8_t data)
 // read byte with ACK
 uint8_t TWI_readACK(void)
 {
-	TWCR = (1<<TWINT)|(1<<TWEN)|(1<<TWEA);
+  TWCR = (1<<TWINT)|(1<<TWEN)|(1<<TWEA);
   while (!(TWCR & (1<<TWINT))) ;
-	return TWDR;
+  return TWDR;
 }
 
 // read byte with NACK
 uint8_t TWI_readNACK(void)
 {
-	TWCR = (1<<TWINT)|(1<<TWEN);
+  TWCR = (1<<TWINT)|(1<<TWEN);
   while (!(TWCR & (1<<TWINT))) ;
-	return TWDR;
+  return TWDR;
 }
 
 uint8_t TWI_status(void)
@@ -140,85 +140,85 @@ uint8_t TWI_status(void)
 // set data to given register
 void mma7660_set_data(uint8_t reg, uint8_t data)
 {
-	// generate START 
-	TWI_start();
+  // generate START 
+  TWI_start();
 
-	uint8_t status = TWI_status();
-	char msg[128];
-	sprintf(msg,"status = %x\n", status);
-	serial_write_str(msg);
-	if (status != 0x08)
-		serial_write_str("start failed!\n");
-	else {
-		serial_write_str("start succeeded\n");
-	}
+  uint8_t status = TWI_status();
+  char msg[128];
+  sprintf(msg,"status = %x\n", status);
+  serial_write_str(msg);
+  if (status != 0x08)
+    serial_write_str("start failed!\n");
+  else {
+    serial_write_str("start succeeded\n");
+  }
 
-	// see fig. 11 in MMA7660 data sheet
-	TWI_write((0x4C << 1) | 0x0);
+  // see fig. 11 in MMA7660 data sheet
+  TWI_write((0x4C << 1) | 0x0);
 
-	// Check value of TWI status register. Mask prescaler bits. 
-	// If status different from MT_SLA_ACK go to ERROR
-	status = TWI_status();
-	sprintf(msg,"status = %x\n", status);
-	serial_write_str(msg);
-	if (status != 0x18) {
-		serial_write_str("address failed\n");
-	}
-	else {
-		serial_write_str("address success!\n");
-	}
+  // Check value of TWI status register. Mask prescaler bits. 
+  // If status different from MT_SLA_ACK go to ERROR
+  status = TWI_status();
+  sprintf(msg,"status = %x\n", status);
+  serial_write_str(msg);
+  if (status != 0x18) {
+    serial_write_str("address failed\n");
+  }
+  else {
+    serial_write_str("address success!\n");
+  }
 
-	// send register
-	TWI_write(reg);
-	status = TWI_status();
-	sprintf(msg,"status = %x\n", status);
-	serial_write_str(msg);
-	// send data
-	TWI_write(data);
-	status = TWI_status();
-	sprintf(msg,"status = %x\n", status);
-	serial_write_str(msg);
+  // send register
+  TWI_write(reg);
+  status = TWI_status();
+  sprintf(msg,"status = %x\n", status);
+  serial_write_str(msg);
+  // send data
+  TWI_write(data);
+  status = TWI_status();
+  sprintf(msg,"status = %x\n", status);
+  serial_write_str(msg);
 
-	TWI_stop();
+  TWI_stop();
 }
 
 // MMA7660
 // set data to given register
 void mma7660_get_data(uint8_t reg, uint8_t* data)
 {
-		// generate START 
-	TWI_start();
+  // generate START 
+  TWI_start();
 
-	uint8_t status = TWI_status();
-	if (status != 0x08)
-		serial_write_str("start failed!\n");
+  uint8_t status = TWI_status();
+  if (status != 0x08)
+    serial_write_str("start failed!\n");
 
-	// see fig. 11 in MMA7660 data sheet
-	TWI_write((0x4C << 1) | 0x0);
+  // see fig. 11 in MMA7660 data sheet
+  TWI_write((0x4C << 1) | 0x0);
 
-	// Check value of TWI status register. Mask prescaler bits. 
-	// If status different from MT_SLA_ACK go to ERROR
-	status = TWI_status();
-	if (status != 0x18) {
-		serial_write_str("read address failed\n");
-	}
+  // Check value of TWI status register. Mask prescaler bits. 
+  // If status different from MT_SLA_ACK go to ERROR
+  status = TWI_status();
+  if (status != 0x18) {
+    serial_write_str("read address failed\n");
+  }
 
-	// send register
-	TWI_write(reg);
-	status = TWI_status();
-	if (status != 0x28) {
-		serial_write_str("send reg failed!");
-	}
+  // send register
+  TWI_write(reg);
+  status = TWI_status();
+  if (status != 0x28) {
+    serial_write_str("send reg failed!");
+  }
 
-	// restart
-	TWI_start();
-	status = TWI_status();
-	if (status != 0x10) {
-		serial_write_str("repeated start failed!");
-	}
+  // restart
+  TWI_start();
+  status = TWI_status();
+  if (status != 0x10) {
+    serial_write_str("repeated start failed!");
+  }
 
-	// see fig. 14 in MMA7660 data sheet
-	TWI_write((0x4C << 1) | 0x1);
+  // see fig. 14 in MMA7660 data sheet
+  TWI_write((0x4C << 1) | 0x1);
 	status = TWI_status();
 	if (status != 0x40) {
 		serial_write_str("SLA + R failed!");
