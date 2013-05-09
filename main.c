@@ -51,9 +51,6 @@ void USART_Transmit(unsigned char data )
   /* Put data into buffer, sends the data */ 
   UDR0 = data;
 }
-//
-// END: serial comms
-//
 
 // write null terminated string
 void serial_write_str(const char* str)
@@ -65,14 +62,88 @@ void serial_write_str(const char* str)
 	}		
 }
 
+//
+// END: serial comms
+//
+
+//
+// BEGIN: I2C comms
+//
+
+void TWI_init()
+{
+  // status register
+  TWSR = 0x00;
+
+  // set TWI bit rate register:
+  // SCL_freq = CPU_freq/(16 + 2*(TWBR)*(PrescalarValue)
+  // In this case = 8000000/(16+2*12*1) = 200 kHz
+	TWBR = 0x0C;
+
+	//enable TWI
+	TWCR = (1<<TWEN);
+}
+
+void TWI_start()
+{
+  // Send START condition
+  TWCR = (1<<TWINT)|(1<<TWSTA)|(1<<TWEN);
+  // Wait for TWINT Flag set. 
+  // This indicates that the START condition has been transmitted
+  while (!(TWCR & (1<<TWINT))) ;
+}
+
+void TWI_stop()
+{
+  // Transmit STOP condition
+  TWCR = (1<<TWINT)|(1<<TWEN)|(1<<TWSTO);
+}
+
+void TWI_write(uint8_t data)
+{
+  // Load DATA into TWDR register. 
+  // Clear TWINT bit in TWCR to start transmission of data
+  TWDR = data;
+  TWCR = (1<<TWINT) | (1<<TWEN);
+  // Wait for TWINT flag set. 
+  // This indicates that the DATA has been transmitted, 
+  // and ACK/NACK has been received.
+  while (!(TWCR & (1<<TWINT))) ;
+}
+
+// read byte with ACK
+uint8_t TWI_readACK(void)
+{
+	TWCR = (1<<TWINT)|(1<<TWEN)|(1<<TWEA);
+  while (!(TWCR & (1<<TWINT))) ;
+	return TWDR;
+}
+
+// read byte with NACK
+uint8_t TWI_readNACK(void)
+{
+	TWCR = (1<<TWINT)|(1<<TWEN);
+  while (!(TWCR & (1<<TWINT))) ;
+	return TWDR;
+}
+
+uint8_t TWI_status(void)
+{
+  return (TWSR & 0xF8);
+}
+
+//
+// END: I2C comms
+//
+
 // MMA7660
 // set data to given register
 void mma7660_set_data(uint8_t reg, uint8_t data)
 {
 	// generate START 
-	TWIStart();
+	TWI_start();
 
-	uint8_t status = TWIGetStatus();
+	uint8_t status = TWI_status();
 	char msg[128];
 	sprintf(msg,"status = %x\n", status);
 	serial_write_str(msg);
@@ -83,11 +154,11 @@ void mma7660_set_data(uint8_t reg, uint8_t data)
 	}
 
 	// see fig. 11 in MMA7660 data sheet
-	TWIWrite((0x4C << 1) | 0x0);
+	TWI_write((0x4C << 1) | 0x0);
 
 	// Check value of TWI status register. Mask prescaler bits. 
 	// If status different from MT_SLA_ACK go to ERROR
-	status = TWIGetStatus();
+	status = TWI_status();
 	sprintf(msg,"status = %x\n", status);
 	serial_write_str(msg);
 	if (status != 0x18) {
@@ -98,17 +169,17 @@ void mma7660_set_data(uint8_t reg, uint8_t data)
 	}
 
 	// send register
-	TWIWrite(reg);
-	status = TWIGetStatus();
+	TWI_write(reg);
+	status = TWI_status();
 	sprintf(msg,"status = %x\n", status);
 	serial_write_str(msg);
 	// send data
-	TWIWrite(data);
-	status = TWIGetStatus();
+	TWI_write(data);
+	status = TWI_status();
 	sprintf(msg,"status = %x\n", status);
 	serial_write_str(msg);
 
-	TWIStop();
+	TWI_stop();
 }
 
 // MMA7660
@@ -116,47 +187,47 @@ void mma7660_set_data(uint8_t reg, uint8_t data)
 void mma7660_get_data(uint8_t reg, uint8_t* data)
 {
 		// generate START 
-	TWIStart();
+	TWI_start();
 
-	uint8_t status = TWIGetStatus();
+	uint8_t status = TWI_status();
 	if (status != 0x08)
 		serial_write_str("start failed!\n");
 
 	// see fig. 11 in MMA7660 data sheet
-	TWIWrite((0x4C << 1) | 0x0);
+	TWI_write((0x4C << 1) | 0x0);
 
 	// Check value of TWI status register. Mask prescaler bits. 
 	// If status different from MT_SLA_ACK go to ERROR
-	status = TWIGetStatus();
+	status = TWI_status();
 	if (status != 0x18) {
 		serial_write_str("read address failed\n");
 	}
 
 	// send register
-	TWIWrite(reg);
-	status = TWIGetStatus();
+	TWI_write(reg);
+	status = TWI_status();
 	if (status != 0x28) {
 		serial_write_str("send reg failed!");
 	}
 
 	// restart
-	TWIStart();
-	status = TWIGetStatus();
+	TWI_start();
+	status = TWI_status();
 	if (status != 0x10) {
 		serial_write_str("repeated start failed!");
 	}
 
 	// see fig. 14 in MMA7660 data sheet
-	TWIWrite((0x4C << 1) | 0x1);
-	status = TWIGetStatus();
+	TWI_write((0x4C << 1) | 0x1);
+	status = TWI_status();
 	if (status != 0x40) {
 		serial_write_str("SLA + R failed!");
 	}
 
 	// set data
-	*data = TWIReadNACK();
+	*data = TWI_readNACK();
 
-	TWIStop();
+	TWI_stop();
 }
 
 // for sleep
@@ -192,7 +263,7 @@ int main (void)
 	sei();                    // turn on interrupts
 	
 	// i2c
-	TWIInit();
+	//TWIInit();
 
 	serial_write_str("\n\n***\nstarting i2c...\n");
 
