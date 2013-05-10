@@ -7,6 +7,9 @@
 #define SPEED 9600
 #define F_CPU 8000000
 
+// uncomment to enable ATmega168 sleep mode
+// #define ENABLE_SLEEP_MODE
+
 // from: http://stackoverflow.com/questions/111928/is-there-a-printf-converter-to-print-in-binary-format
 #define BYTETOBINARYPATTERN "%d%d%d%d%d%d%d%d"
 #define BYTETOBINARY(byte)                      \
@@ -235,14 +238,9 @@ volatile int goToSleep = 0;
 
 int main (void)
 {
-	char msg[128];
-
-	/* let the preprocessor calculate this */
-	//serial_init( ( F_CPU / SPEED / 16 ) - 1);
-
   USART_Init(MYUBRR);
 
-	// LED
+	// LED for testing
 	// PD4 as output
 	DDRD |= (1<<4);
 	// initialize 
@@ -258,9 +256,7 @@ int main (void)
 	sei();                    // turn on interrupts
 	
 	// i2c
-	//TWIInit();
-
-	serial_write_str("\n\n***\nstarting i2c...\n");
+	TWI_init();
 
 	// set MODE to stand by
 	mma7660_set_data(0x07,0x00);
@@ -285,38 +281,37 @@ int main (void)
 
 
 	while (1) {
-		//serial_write_str(str);
 
-		// read a byte
+		// read ax/ay/az
 		uint8_t x, y, z;
+    char strA[128];
 		mma7660_get_data(0x00, &x);
 		mma7660_get_data(0x01, &y);
 		mma7660_get_data(0x02, &z);
-		//sprintf(msg, "%d %d %d\n", x, y, z);
-		//serial_write_str(msg);
-		sprintf(msg, "%f, %f, %f\n", gLUT[x], gLUT[y], gLUT[z]);
-		//serial_write_str(msg);
+    sprintf(strA, "%f %f %f", gLUT[x], gLUT[y], gLUT[z]);
 		
 		// tilt register
 		uint8_t tReg;
+    char strT[16];
 		mma7660_get_data(0x03, &tReg);
-		sprintf(msg, "TILT :"BYTETOBINARYPATTERN"\n", BYTETOBINARY(tReg));
-		//sprintf(msg, "%x\n", tReg);
-		//serial_write_str(msg);
+		sprintf(strT, BYTETOBINARYPATTERN, BYTETOBINARY(tReg));
 
 		// SRST
 		uint8_t srstReg;
+    char strS[16];
 		mma7660_get_data(0x04, &srstReg);
-		sprintf(msg, "SRST :"BYTETOBINARYPATTERN"\n", BYTETOBINARY(srstReg));
+		sprintf(strS, BYTETOBINARYPATTERN, BYTETOBINARY(srstReg));
+
+    // output 
+    char msg[256];
+    sprintf(msg, "DATA %s %s %s\n", strA, strT, strS);
 		serial_write_str(msg);
 
-		// SPCNT
-		uint8_t spcntReg;
-		mma7660_get_data(0x05, &spcntReg);
-		sprintf(msg, "SPCNT:"BYTETOBINARYPATTERN"\n", BYTETOBINARY(spcntReg));
-		//serial_write_str(msg);
-
+    // delay
 		_delay_ms(100);
+
+    // sleep mode code
+#ifdef ENABLE_SLEEP_MODE
 
     // is MMA7660 asleep?
     if(srstReg & 0b00000010) {
@@ -361,6 +356,7 @@ int main (void)
 
 			sei();
 		}
+#endif // ENABLE_SLEEP_MODE
 
 	}
 
