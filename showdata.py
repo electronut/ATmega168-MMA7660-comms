@@ -38,7 +38,7 @@ def main():
 
   # make plot
   xline, = plt.plot(ax)
-  plt.ylim([-2.5,2.5])
+  plt.ylim([-3.0,3.0])
 
   print 'plotting MMA7660 data...'
   strPort = '/dev/tty.usbserial-A7006Yqh'

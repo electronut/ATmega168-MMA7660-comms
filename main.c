@@ -308,7 +308,7 @@ int main (void)
 		serial_write_str(msg);
 
     // delay
-		_delay_ms(100);
+		_delay_ms(10);
 
     // sleep mode code
 #ifdef ENABLE_SLEEP_MODE
