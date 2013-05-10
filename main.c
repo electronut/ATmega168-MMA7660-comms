@@ -148,12 +148,8 @@ void mma7660_set_data(uint8_t reg, uint8_t data)
 
   uint8_t status = TWI_status();
   char msg[128];
-  sprintf(msg,"status = %x\n", status);
-  serial_write_str(msg);
-  if (status != 0x08)
-    serial_write_str("start failed!\n");
-  else {
-    serial_write_str("start succeeded\n");
+  if (status != 0x08) {
+    serial_write_str("MSG: start failed!\n");
   }
 
   // see fig. 11 in MMA7660 data sheet
@@ -162,25 +158,23 @@ void mma7660_set_data(uint8_t reg, uint8_t data)
   // Check value of TWI status register. Mask prescaler bits. 
   // If status different from MT_SLA_ACK go to ERROR
   status = TWI_status();
-  sprintf(msg,"status = %x\n", status);
-  serial_write_str(msg);
   if (status != 0x18) {
-    serial_write_str("address failed\n");
-  }
-  else {
-    serial_write_str("address success!\n");
+    serial_write_str("MSG: address failed\n");
   }
 
   // send register
   TWI_write(reg);
   status = TWI_status();
-  sprintf(msg,"status = %x\n", status);
-  serial_write_str(msg);
+  if (status != 0x28) {
+    serial_write_str("MSG: send failed\n");
+  }
+
   // send data
   TWI_write(data);
   status = TWI_status();
-  sprintf(msg,"status = %x\n", status);
-  serial_write_str(msg);
+  if (status != 0x28) {
+    serial_write_str("MSG: send failed\n");
+  }
 
   TWI_stop();
 }
@@ -193,8 +187,9 @@ void mma7660_get_data(uint8_t reg, uint8_t* data)
   TWI_start();
 
   uint8_t status = TWI_status();
-  if (status != 0x08)
-    serial_write_str("start failed!\n");
+  if (status != 0x08) {
+    serial_write_str("MSG: start failed!\n");
+  }
 
   // see fig. 11 in MMA7660 data sheet
   TWI_write((0x4C << 1) | 0x0);
@@ -203,28 +198,28 @@ void mma7660_get_data(uint8_t reg, uint8_t* data)
   // If status different from MT_SLA_ACK go to ERROR
   status = TWI_status();
   if (status != 0x18) {
-    serial_write_str("read address failed\n");
+    serial_write_str("MSG: read address failed\n");
   }
 
   // send register
   TWI_write(reg);
   status = TWI_status();
   if (status != 0x28) {
-    serial_write_str("send reg failed!");
+    serial_write_str("MSG: send reg failed!");
   }
 
   // restart
   TWI_start();
   status = TWI_status();
   if (status != 0x10) {
-    serial_write_str("repeated start failed!");
+    serial_write_str("MSG: repeated start failed!");
   }
 
   // see fig. 14 in MMA7660 data sheet
   TWI_write((0x4C << 1) | 0x1);
 	status = TWI_status();
 	if (status != 0x40) {
-		serial_write_str("SLA + R failed!");
+		serial_write_str("MSG: SLA + R failed!");
 	}
 
 	// set data
